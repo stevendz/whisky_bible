@@ -109,9 +109,34 @@ main {
   margin: 0 auto;
   padding: 0 16px calc(env(safe-area-inset-bottom) + 100px);
 }
-.letter {
+#alphabet {
   position: sticky;
   top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 6px 76px 6px 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+#alphabet button {
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+}
+#alphabet button:active { background: var(--accent-soft); }
+#alphabet button:disabled { color: var(--muted); opacity: .35; cursor: default; }
+section { scroll-margin-top: var(--nav-h, 0px); }
+.letter {
+  position: sticky;
+  top: var(--nav-h, 0px);
   z-index: 1;
   margin: 0 -16px;
   padding: 10px 16px 4px;
@@ -290,6 +315,7 @@ main {
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.2a1.5 1.5 0 0 0 1.5 1.2h8.3a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>
   <span id="cart-badge" hidden>0</span>
 </button>
+<nav id="alphabet" aria-label="Zu Buchstabe springen"></nav>
 <main id="list" aria-live="polite"></main>
 <div id="bar">
   <div id="toast" role="status"></div>
@@ -317,6 +343,8 @@ const listEl = $("list");
 const input = $("q");
 const bar = $("bar");
 const cartDialog = $("cart");
+const nav = $("alphabet");
+const LETTERS = ["#", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
 let whiskies = [];
 let byId = new Map();
 let cart = loadCart();
@@ -378,21 +406,19 @@ function render() {
   $("count").textContent = input.value.trim()
     ? `${hits.length} von ${whiskies.length} Whiskys`
     : `${whiskies.length} Whiskys`;
+  const groups = new Map();
+  for (const w of hits) {
+    const l = letterOf(w.name);
+    if (!groups.has(l)) groups.set(l, []);
+    groups.get(l).push(w);
+  }
+  for (const b of nav.children) b.disabled = !groups.has(b.dataset.letter);
   if (!hits.length) {
     listEl.innerHTML = `<p class="empty">Keine Treffer für „${esc(input.value.trim())}“</p>`;
     return;
   }
-  let html = "";
-  let current = "";
-  for (const w of hits) {
-    const l = letterOf(w.name);
-    if (l !== current) {
-      current = l;
-      html += `<div class="letter">${l}</div>`;
-    }
-    html += card(w);
-  }
-  listEl.innerHTML = html;
+  listEl.innerHTML = [...groups].map(([l, ws]) =>
+    `<section id="letter-${l}"><div class="letter">${l}</div>${ws.map(card).join("")}</section>`).join("");
 }
 
 function loadCart() {
@@ -487,6 +513,14 @@ input.addEventListener("input", () => {
 });
 input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); });
 $("clear").addEventListener("click", () => { input.value = ""; render(); input.focus(); });
+nav.innerHTML = LETTERS.map(l => `<button type="button" data-letter="${l}" aria-label="Zu ${l === "#" ? "Zahlen" : l} springen">${l}</button>`).join("");
+nav.addEventListener("click", e => {
+  const b = e.target.closest("button[data-letter]");
+  if (b && !b.disabled) $(`letter-${b.dataset.letter}`).scrollIntoView({ behavior: "smooth" });
+});
+new ResizeObserver(() => {
+  document.documentElement.style.setProperty("--nav-h", `${nav.offsetHeight}px`);
+}).observe(nav);
 listEl.addEventListener("click", e => {
   const b = e.target.closest("button[data-size]");
   if (b) addToCart(b.dataset.id, b.dataset.size);
