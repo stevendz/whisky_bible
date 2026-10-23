@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#f6f1e9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16120e" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Whisky Bible">
+<title>Whisky Bible</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M14 8h36l-4 48H18z' fill='%23c8862a'/><path d='M16 26h32l-2.6 30H18.6z' fill='%238a4f12'/></svg>">
+<style>
+:root {
+  --bg: #f6f1e9;
+  --surface: #fffdf9;
+  --text: #2a2118;
+  --muted: #7a6a58;
+  --line: #e6dccd;
+  --accent: #a8641b;
+  --accent-soft: #f1e2cc;
+  --chip: #efe6d8;
+  --shadow: 0 -6px 24px rgba(60, 40, 20, .12);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16120e;
+    --surface: #211b15;
+    --text: #f1e8dc;
+    --muted: #a8977f;
+    --line: #342a20;
+    --accent: #e0a24a;
+    --accent-soft: #3a2a17;
+    --chip: #2c241b;
+    --shadow: 0 -6px 24px rgba(0, 0, 0, .5);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16120e;
+  --surface: #211b15;
+  --text: #f1e8dc;
+  --muted: #a8977f;
+  --line: #342a20;
+  --accent: #e0a24a;
+  --accent-soft: #3a2a17;
+  --chip: #2c241b;
+  --shadow: 0 -6px 24px rgba(0, 0, 0, .5);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+header {
+  padding: calc(env(safe-area-inset-top) + 20px) 16px 8px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+  letter-spacing: .2px;
+}
+#count { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px calc(env(safe-area-inset-bottom) + 150px);
+}
+.letter {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 -16px;
+  padding: 10px 16px 4px;
+  background: var(--bg);
+  color: var(--accent);
+  font: 700 15px/1.2 Georgia, serif;
+}
+.card {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.top { display: flex; gap: 12px; align-items: flex-start; }
+.name { flex: 1; min-width: 0; font-weight: 600; font-size: 16px; overflow-wrap: anywhere; }
+.prices { flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+.price { display: block; white-space: nowrap; font-weight: 600; }
+.price small { color: var(--muted); font-weight: 400; font-size: 12px; margin-right: 4px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.tag.pct { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.notes {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card.open .notes { -webkit-line-clamp: unset; display: block; }
+.page { display: none; margin-top: 6px; color: var(--muted); font-size: 12px; }
+.card.open .page { display: block; }
+.empty { padding: 48px 8px; text-align: center; color: var(--muted); }
+#bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  padding: 10px 0 calc(env(safe-area-inset-bottom) + 10px);
+  will-change: transform;
+}
+.bar-inner { max-width: 720px; margin: 0 auto; }
+#fields {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 0 16px 10px;
+  scrollbar-width: none;
+}
+#fields::-webkit-scrollbar { display: none; }
+#fields button {
+  flex: none;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+#fields button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface);
+  font-weight: 600;
+}
+.search { position: relative; margin: 0 16px; }
+.search svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+#q {
+  width: 100%;
+  height: 46px;
+  padding: 0 44px 0 42px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+#q:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+#q::-webkit-search-cancel-button { display: none; }
+#clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 50%;
+  background: var(--chip);
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+}
+#clear[hidden] { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Whisky Bible</h1>
+  <p id="count">Lade …</p>
+</header>
+<main id="list" aria-live="polite"></main>
+<div id="bar">
+  <div class="bar-inner">
+    <div id="fields" role="group" aria-label="Suchen in">
+      <button type="button" data-field="all" aria-pressed="true">Alle</button>
+      <button type="button" data-field="name" aria-pressed="false">Name</button>
+      <button type="button" data-field="price" aria-pressed="false">Preis</button>
+      <button type="button" data-field="year" aria-pressed="false">Jahr</button>
+      <button type="button" data-field="age" aria-pressed="false">Alter</button>
+      <button type="button" data-field="pct" aria-pressed="false">Prozent</button>
+      <button type="button" data-field="place" aria-pressed="false">Region</button>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Name, Preis, Jahr, % …" aria-label="Whisky suchen">
+      <button id="clear" type="button" aria-label="Suche leeren" hidden>×</button>
+    </div>
+  </div>
+</div>
+<script>
+const PLACEHOLDERS = {
+  all: "Name, Preis, Jahr, % …",
+  name: "z. B. Glenfiddich 18",
+  price: "z. B. 12 · 5-10 · <8 · >50",
+  year: "z. B. 1990 · 1970-1980 · <1980",
+  age: "z. B. 18 · 20-30 · >25",
+  pct: "z. B. 46 · >55 · 40-43",
+  place: "z. B. Islay · Speyside · Japan",
+};
+const collator = new Intl.Collator("de", { numeric: true, sensitivity: "base" });
+const listEl = document.getElementById("list");
+const countEl = document.getElementById("count");
+const input = document.getElementById("q");
+const clearBtn = document.getElementById("clear");
+const bar = document.getElementById("bar");
+let whiskies = [];
+let field = "all";
+
+const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’`´]/g, "'");
+const num = s => parseFloat(String(s).replace(",", "."));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function prepare(w) {
+  const prices = Object.values(w.prices).map(num);
+  const years = w.years.map(Number);
+  const values = {
+    price: prices,
+    year: years,
+    age: w.age ? [Number(w.age)] : [],
+    pct: w.pct ? [num(w.pct)] : [],
+  };
+  const priceText = Object.entries(w.prices).map(([k, v]) => `${v} ${v}€ ${k}`).join(" ");
+  const text = {
+    name: norm(w.name),
+    place: norm([w.region, w.distillery].join(" ")),
+    price: norm(priceText),
+    year: w.years.join(" "),
+    age: w.age ? `${w.age} ${w.age}yo` : "",
+    pct: w.pct ? `${w.pct} ${w.pct}%` : "",
+  };
+  text.all = [text.name, text.place, text.price, text.year, text.age, text.pct, norm(w.notes)].join(" ");
+  return { ...w, values, text };
+}
+
+function parseRange(q) {
+  const m = q.replace(/\s+/g, "").replace(/€|%|yo|jahre?|j\.?/gi, "")
+    .match(/^(<=?|>=?|bis|ab|unter|über|uber)?(\d+(?:[.,]\d+)?)(?:-(\d+(?:[.,]\d+)?))?$/i);
+  if (!m) return null;
+  const [, op, a, b] = m;
+  const x = num(a);
+  if (b !== undefined) return v => v >= Math.min(x, num(b)) && v <= Math.max(x, num(b));
+  switch ((op || "").toLowerCase()) {
+    case "<": case "unter": return v => v < x;
+    case "<=": case "bis": return v => v <= x;
+    case ">": case "über": case "uber": return v => v > x;
+    case ">=": case "ab": return v => v >= x;
+    default: return v => v === x;
+  }
+}
+
+function matcher(query) {
+  const q = query.trim();
+  if (!q) return () => true;
+  if (field in { price: 1, year: 1, age: 1, pct: 1 }) {
+    const test = parseRange(q);
+    if (test) return w => w.values[field].some(test);
+  }
+  const tokens = norm(q).split(/\s+/).filter(Boolean);
+  return w => tokens.every(t => {
+    const pct = field === "all" && t.match(/^(\d+(?:[.,]\d+)?)%$/);
+    if (pct) return w.values.pct.includes(num(pct[1]));
+    return w.text[field].includes(t);
+  });
+}
+
+function letterOf(name) {
+  const c = norm(name).charAt(0).toUpperCase();
+  return /[A-Z]/.test(c) ? c : "#";
+}
+
+function card(w) {
+  const prices = Object.entries(w.prices)
+    .map(([k, v]) => `<span class="price"><small>${k.replace("cl", " cl")}</small>${esc(v)} €</span>`).join("");
+  const tags = [
+    w.pct ? `<span class="tag pct">${esc(w.pct)} %</span>` : "",
+    w.age ? `<span class="tag">${esc(w.age)} Jahre</span>` : "",
+    w.distillery ? `<span class="tag">${esc(w.distillery)}</span>` : "",
+    w.region ? `<span class="tag">${esc(w.region)}</span>` : "",
+  ].join("");
+  return `<button type="button" class="card">
+    <div class="top"><div class="name">${esc(w.name)}</div><div class="prices">${prices}</div></div>
+    <div class="meta">${tags}</div>
+    ${w.notes ? `<p class="notes">${esc(w.notes)}</p>` : ""}
+    <div class="page">Karte Seite ${w.page}</div>
+  </button>`;
+}
+
+function render() {
+  const hits = whiskies.filter(matcher(input.value));
+  clearBtn.hidden = !input.value;
+  countEl.textContent = input.value.trim()
+    ? `${hits.length} von ${whiskies.length} Whiskys`
+    : `${whiskies.length} Whiskys`;
+  if (!hits.length) {
+    listEl.innerHTML = `<p class="empty">Keine Treffer für „${esc(input.value.trim())}“</p>`;
+    return;
+  }
+  let html = "";
+  let current = "";
+  for (const w of hits) {
+    const l = letterOf(w.name);
+    if (l !== current) {
+      current = l;
+      html += `<div class="letter">${l}</div>`;
+    }
+    html += card(w);
+  }
+  listEl.innerHTML = html;
+}
+
+let timer;
+input.addEventListener("input", () => {
+  clearTimeout(timer);
+  timer = setTimeout(() => { render(); window.scrollTo(0, 0); }, 80);
+});
+input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); });
+clearBtn.addEventListener("click", () => { input.value = ""; render(); input.focus(); });
+document.getElementById("fields").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  field = b.dataset.field;
+  for (const x of e.currentTarget.children) x.setAttribute("aria-pressed", x === b ? "true" : "false");
+  input.placeholder = PLACEHOLDERS[field];
+  render();
+  window.scrollTo(0, 0);
+});
+listEl.addEventListener("click", e => {
+  const c = e.target.closest(".card");
+  if (c) c.classList.toggle("open");
+});
+
+if (window.visualViewport) {
+  const vv = window.visualViewport;
+  const place = () => {
+    const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    bar.style.transform = offset ? `translateY(${-offset}px)` : "";
+  };
+  vv.addEventListener("resize", place);
+  vv.addEventListener("scroll", place);
+}
+
+fetch("data/whiskies.json")
+  .then(r => r.json())
+  .then(data => {
+    whiskies = data.map(prepare).sort((a, b) => collator.compare(a.name, b.name) || a.page - b.page);
+    render();
+  })
+  .catch(() => { countEl.textContent = "Daten konnten nicht geladen werden."; });
+</script>
+</body>
+</html>
