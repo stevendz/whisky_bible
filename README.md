@@ -6,17 +6,7 @@ Durchsuchbare, fürs Smartphone optimierte Whisky-Karte (992 Whiskys).
 
 ## Suche
 
-Das Suchfeld sitzt am unteren Bildschirmrand. Die Ergebnisse sind immer alphabetisch sortiert.
-
-| Feld | Beispiele |
-| --- | --- |
-| Alle | `glenfiddich`, `islay 46%` |
-| Name | `port ellen` |
-| Preis (2 cl oder 4 cl) | `12`, `5-10`, `<8`, `>50` |
-| Jahr | `1990`, `1970-1980` |
-| Alter | `18`, `>25` |
-| Prozent | `46`, `>55`, `40-43` |
-| Region | `islay`, `japan`, `cadenhead` |
+Das Suchfeld sitzt am unteren Bildschirmrand und durchsucht immer alles: Name, Preis, Jahr, Alter, Prozent, Brennerei und Region. Mehrere Begriffe müssen alle passen, z. B. `islay 46%` oder `cadenhead 1991`. Die Ergebnisse sind immer alphabetisch sortiert.
 
 ## Warenkorb
 

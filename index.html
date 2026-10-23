@@ -107,7 +107,7 @@ h1 {
 main {
   max-width: 720px;
   margin: 0 auto;
-  padding: 0 16px calc(env(safe-area-inset-bottom) + 150px);
+  padding: 0 16px calc(env(safe-area-inset-bottom) + 100px);
 }
 .letter {
   position: sticky;
@@ -168,28 +168,6 @@ main {
   will-change: transform;
 }
 .bar-inner { max-width: 720px; margin: 0 auto; }
-#fields {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 0 16px 10px;
-  scrollbar-width: none;
-}
-#fields::-webkit-scrollbar { display: none; }
-#fields button {
-  flex: none;
-  padding: 6px 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: transparent;
-  font-size: 14px;
-}
-#fields button[aria-pressed="true"] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--surface);
-  font-weight: 600;
-}
 .search { position: relative; margin: 0 16px; }
 .search svg {
   position: absolute;
@@ -333,15 +311,6 @@ main {
 <div id="bar">
   <div id="toast" role="status"></div>
   <div class="bar-inner">
-    <div id="fields" role="group" aria-label="Suchen in">
-      <button type="button" data-field="all" aria-pressed="true">Alle</button>
-      <button type="button" data-field="name" aria-pressed="false">Name</button>
-      <button type="button" data-field="price" aria-pressed="false">Preis</button>
-      <button type="button" data-field="year" aria-pressed="false">Jahr</button>
-      <button type="button" data-field="age" aria-pressed="false">Alter</button>
-      <button type="button" data-field="pct" aria-pressed="false">Prozent</button>
-      <button type="button" data-field="place" aria-pressed="false">Region</button>
-    </div>
     <div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Name, Preis, Jahr, % …" aria-label="Whisky suchen">
@@ -361,15 +330,6 @@ main {
   </div>
 </dialog>
 <script>
-const PLACEHOLDERS = {
-  all: "Name, Preis, Jahr, % …",
-  name: "z. B. Glenfiddich 18",
-  price: "z. B. 12 · 5-10 · <8 · >50",
-  year: "z. B. 1990 · 1970-1980 · <1980",
-  age: "z. B. 18 · 20-30 · >25",
-  pct: "z. B. 46 · >55 · 40-43",
-  place: "z. B. Islay · Speyside · Japan",
-};
 const CART_KEY = "whisky-bible-cart";
 const collator = new Intl.Collator("de", { numeric: true, sensitivity: "base" });
 const euro = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
@@ -380,7 +340,6 @@ const bar = $("bar");
 const cartDialog = $("cart");
 let whiskies = [];
 let byId = new Map();
-let field = "all";
 let cart = loadCart();
 
 const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’`´]/g, "'");
@@ -388,54 +347,31 @@ const num = s => parseFloat(String(s).replace(",", "."));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const sizeLabel = size => size.replace("cl", " cl");
 
-function prepare(w) {
-  const values = {
-    price: Object.values(w.prices).map(num),
-    year: w.years.map(Number),
-    age: w.age ? [Number(w.age)] : [],
-    pct: w.pct ? [num(w.pct)] : [],
-  };
-  const text = {
-    name: norm(w.name),
-    place: norm([w.region, w.distillery].join(" ")),
-    price: norm(Object.entries(w.prices).map(([k, v]) => `${v} ${v}€ ${k}`).join(" ")),
-    year: w.years.join(" "),
-    age: w.age ? `${w.age} ${w.age}yo` : "",
-    pct: w.pct ? `${w.pct} ${w.pct}%` : "",
-  };
-  text.all = [text.name, text.place, text.price, text.year, text.age, text.pct].join(" ");
-  return { ...w, id: `${w.page}|${w.name}`, values, text };
+function details(w) {
+  return [
+    w.pct && `${w.pct} %`,
+    w.age && `${w.age} Jahre`,
+    w.distillery,
+    w.region,
+  ].filter(Boolean);
 }
 
-function parseRange(q) {
-  const m = q.replace(/\s+/g, "").replace(/€|%|yo|jahre?|j\.?/gi, "")
-    .match(/^(<=?|>=?|bis|ab|unter|über|uber)?(\d+(?:[.,]\d+)?)(?:-(\d+(?:[.,]\d+)?))?$/i);
-  if (!m) return null;
-  const [, op, a, b] = m;
-  const x = num(a);
-  if (b !== undefined) return v => v >= Math.min(x, num(b)) && v <= Math.max(x, num(b));
-  switch ((op || "").toLowerCase()) {
-    case "<": case "unter": return v => v < x;
-    case "<=": case "bis": return v => v <= x;
-    case ">": case "über": case "uber": return v => v > x;
-    case ">=": case "ab": return v => v >= x;
-    default: return v => v === x;
-  }
+function prepare(w) {
+  const text = norm([
+    w.name,
+    w.region,
+    w.distillery,
+    ...Object.entries(w.prices).map(([size, price]) => `${price} ${price}€ ${size}`),
+    ...w.years,
+    w.age && `${w.age}yo ${w.age} jahre`,
+    w.pct && `${w.pct}%`,
+  ].filter(Boolean).join(" "));
+  return { ...w, id: `${w.page}|${w.name}`, text };
 }
 
 function matcher(query) {
-  const q = query.trim();
-  if (!q) return () => true;
-  if (field in { price: 1, year: 1, age: 1, pct: 1 }) {
-    const test = parseRange(q);
-    if (test) return w => w.values[field].some(test);
-  }
-  const tokens = norm(q).split(/\s+/).filter(Boolean);
-  return w => tokens.every(t => {
-    const pct = field === "all" && t.match(/^(\d+(?:[.,]\d+)?)%$/);
-    if (pct) return w.values.pct.includes(num(pct[1]));
-    return w.text[field].includes(t);
-  });
+  const tokens = norm(query).split(/\s+/).filter(Boolean);
+  return w => tokens.every(t => w.text.includes(t));
 }
 
 function letterOf(name) {
@@ -448,12 +384,8 @@ function card(w) {
     `<button type="button" data-id="${esc(w.id)}" data-size="${size}" aria-label="${esc(w.name)}, ${sizeLabel(size)} für ${esc(price)} € hinzufügen">
       <span><small>${sizeLabel(size)}</small> <b>${esc(price)} €</b></span><span class="plus">+</span>
     </button>`).join("");
-  const tags = [
-    w.pct ? `<span class="tag pct">${esc(w.pct)} %</span>` : "",
-    w.age ? `<span class="tag">${esc(w.age)} Jahre</span>` : "",
-    w.distillery ? `<span class="tag">${esc(w.distillery)}</span>` : "",
-    w.region ? `<span class="tag">${esc(w.region)}</span>` : "",
-  ].join("");
+  const tags = details(w)
+    .map((d, i) => `<span class="tag${i === 0 && w.pct ? " pct" : ""}">${esc(d)}</span>`).join("");
   return `<article class="card">
     <div class="name">${esc(w.name)}</div>
     <div class="meta">${tags}</div>
@@ -546,7 +478,11 @@ function renderCart() {
   const total = lines.reduce((s, l) => s + l.qty * l.price, 0);
   $("cart-items").innerHTML = lines.length
     ? lines.map(l => `<div class="line">
-        <div><div class="n">${esc(l.w.name)}</div><div class="sub">${sizeLabel(l.size)} · ${euro.format(l.price)}</div></div>
+        <div>
+          <div class="n">${esc(l.w.name)}</div>
+          <div class="sub">${esc(details(l.w).join(" · "))}</div>
+          <div class="sub">${sizeLabel(l.size)} · ${euro.format(l.price)}</div>
+        </div>
         <div class="sum">${euro.format(l.qty * l.price)}</div>
         <div></div>
         <div class="qty">
@@ -577,15 +513,6 @@ input.addEventListener("input", () => {
 });
 input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); });
 $("clear").addEventListener("click", () => { input.value = ""; render(); input.focus(); });
-$("fields").addEventListener("click", e => {
-  const b = e.target.closest("button");
-  if (!b) return;
-  field = b.dataset.field;
-  for (const x of e.currentTarget.children) x.setAttribute("aria-pressed", x === b ? "true" : "false");
-  input.placeholder = PLACEHOLDERS[field];
-  render();
-  window.scrollTo(0, 0);
-});
 listEl.addEventListener("click", e => {
   const b = e.target.closest("button[data-size]");
   if (b) addToCart(b.dataset.id, b.dataset.size);
