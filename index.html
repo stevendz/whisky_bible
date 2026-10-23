@@ -20,6 +20,7 @@
   --accent-soft: #f1e2cc;
   --chip: #efe6d8;
   --shadow: 0 -6px 24px rgba(60, 40, 20, .12);
+  --backdrop: rgba(40, 28, 16, .45);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -32,6 +33,7 @@
     --accent-soft: #3a2a17;
     --chip: #2c241b;
     --shadow: 0 -6px 24px rgba(0, 0, 0, .5);
+    --backdrop: rgba(0, 0, 0, .6);
   }
 }
 :root[data-theme="dark"] {
@@ -44,9 +46,11 @@
   --accent-soft: #3a2a17;
   --chip: #2c241b;
   --shadow: 0 -6px 24px rgba(0, 0, 0, .5);
+  --backdrop: rgba(0, 0, 0, .6);
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
+html.locked { overflow: hidden; }
 body {
   margin: 0;
   background: var(--bg);
@@ -54,8 +58,9 @@ body {
   font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
+button { font: inherit; color: inherit; cursor: pointer; }
 header {
-  padding: calc(env(safe-area-inset-top) + 20px) 16px 8px;
+  padding: calc(env(safe-area-inset-top) + 20px) 80px 8px 16px;
   max-width: 720px;
   margin: 0 auto;
 }
@@ -66,6 +71,39 @@ h1 {
   letter-spacing: .2px;
 }
 #count { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+#cart-btn {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 16px);
+  right: max(16px, calc((100vw - 720px) / 2 + 16px));
+  z-index: 20;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .15);
+  display: grid;
+  place-items: center;
+}
+#cart-btn svg { width: 22px; height: 22px; }
+#cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--surface);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+#cart-badge[hidden] { display: none; }
+#cart-btn.bump { animation: bump .35s ease; }
+@keyframes bump { 40% { transform: scale(1.18); } }
 main {
   max-width: 720px;
   margin: 0 auto;
@@ -82,24 +120,14 @@ main {
   font: 700 15px/1.2 Georgia, serif;
 }
 .card {
-  display: block;
-  width: 100%;
   margin: 8px 0;
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
 }
-.top { display: flex; gap: 12px; align-items: flex-start; }
-.name { flex: 1; min-width: 0; font-weight: 600; font-size: 16px; overflow-wrap: anywhere; }
-.prices { flex: none; text-align: right; font-variant-numeric: tabular-nums; }
-.price { display: block; white-space: nowrap; font-weight: 600; }
-.price small { color: var(--muted); font-weight: 400; font-size: 12px; margin-right: 4px; }
-.meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.name { font-weight: 600; font-size: 16px; overflow-wrap: anywhere; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .tag {
   padding: 2px 8px;
   border-radius: 999px;
@@ -108,18 +136,24 @@ main {
   font-size: 12.5px;
 }
 .tag.pct { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-.notes {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 14px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.add { display: flex; gap: 8px; margin-top: 10px; }
+.add button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: transparent;
+  font-variant-numeric: tabular-nums;
 }
-.card.open .notes { -webkit-line-clamp: unset; display: block; }
-.page { display: none; margin-top: 6px; color: var(--muted); font-size: 12px; }
-.card.open .page { display: block; }
+.add button:active { background: var(--accent-soft); }
+.add small { color: var(--muted); font-size: 13px; }
+.add b { font-weight: 600; }
+.add .plus { color: var(--accent); font-size: 20px; font-weight: 600; line-height: 1; }
 .empty { padding: 48px 8px; text-align: center; color: var(--muted); }
 #bar {
   position: fixed;
@@ -148,8 +182,6 @@ main {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: transparent;
-  color: var(--text);
-  font: inherit;
   font-size: 14px;
 }
 #fields button[aria-pressed="true"] {
@@ -199,6 +231,93 @@ main {
   line-height: 1;
 }
 #clear[hidden] { display: none; }
+#toast {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: calc(100% + 10px);
+  max-width: 688px;
+  margin: 0 auto;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 14px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .2s, transform .2s;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; transform: none; }
+#cart {
+  width: 100%;
+  max-width: 720px;
+  max-height: none;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+#cart::backdrop { background: var(--backdrop); }
+#cart[open] { display: flex; flex-direction: column; }
+.cart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + 16px) 16px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.cart-head h2 { margin: 0; font: 700 24px/1.2 Georgia, serif; }
+#cart-close {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--chip);
+  font-size: 22px;
+  line-height: 1;
+}
+#cart-items { flex: 1; overflow-y: auto; padding: 4px 16px 16px; -webkit-overflow-scrolling: touch; }
+.line {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.line .n { font-weight: 600; overflow-wrap: anywhere; }
+.line .sub { color: var(--muted); font-size: 14px; }
+.line .sum { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.qty { display: flex; align-items: center; gap: 4px; justify-self: end; }
+.qty button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  font-size: 18px;
+  line-height: 1;
+}
+.qty span { min-width: 24px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cart-foot {
+  padding: 14px 16px calc(env(safe-area-inset-bottom) + 14px);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.total small { color: var(--muted); font-size: 14px; font-weight: 400; }
+#cart-empty-btn {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+}
+#cart-empty-btn[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -206,8 +325,13 @@ main {
   <h1>Whisky Bible</h1>
   <p id="count">Lade …</p>
 </header>
+<button id="cart-btn" type="button" aria-label="Warenkorb öffnen">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.2a1.5 1.5 0 0 0 1.5 1.2h8.3a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>
+  <span id="cart-badge" hidden>0</span>
+</button>
 <main id="list" aria-live="polite"></main>
 <div id="bar">
+  <div id="toast" role="status"></div>
   <div class="bar-inner">
     <div id="fields" role="group" aria-label="Suchen in">
       <button type="button" data-field="all" aria-pressed="true">Alle</button>
@@ -225,6 +349,17 @@ main {
     </div>
   </div>
 </div>
+<dialog id="cart" aria-labelledby="cart-title">
+  <div class="cart-head">
+    <h2 id="cart-title">Warenkorb</h2>
+    <button id="cart-close" type="button" aria-label="Schließen">×</button>
+  </div>
+  <div id="cart-items"></div>
+  <div class="cart-foot">
+    <div class="total"><span>Summe <small id="cart-count"></small></span><span id="cart-total">0 €</span></div>
+    <button id="cart-empty-btn" type="button">Warenkorb leeren</button>
+  </div>
+</dialog>
 <script>
 const PLACEHOLDERS = {
   all: "Name, Preis, Jahr, % …",
@@ -235,39 +370,41 @@ const PLACEHOLDERS = {
   pct: "z. B. 46 · >55 · 40-43",
   place: "z. B. Islay · Speyside · Japan",
 };
+const CART_KEY = "whisky-bible-cart";
 const collator = new Intl.Collator("de", { numeric: true, sensitivity: "base" });
-const listEl = document.getElementById("list");
-const countEl = document.getElementById("count");
-const input = document.getElementById("q");
-const clearBtn = document.getElementById("clear");
-const bar = document.getElementById("bar");
+const euro = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+const $ = id => document.getElementById(id);
+const listEl = $("list");
+const input = $("q");
+const bar = $("bar");
+const cartDialog = $("cart");
 let whiskies = [];
+let byId = new Map();
 let field = "all";
+let cart = loadCart();
 
 const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’`´]/g, "'");
 const num = s => parseFloat(String(s).replace(",", "."));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const sizeLabel = size => size.replace("cl", " cl");
 
 function prepare(w) {
-  const prices = Object.values(w.prices).map(num);
-  const years = w.years.map(Number);
   const values = {
-    price: prices,
-    year: years,
+    price: Object.values(w.prices).map(num),
+    year: w.years.map(Number),
     age: w.age ? [Number(w.age)] : [],
     pct: w.pct ? [num(w.pct)] : [],
   };
-  const priceText = Object.entries(w.prices).map(([k, v]) => `${v} ${v}€ ${k}`).join(" ");
   const text = {
     name: norm(w.name),
     place: norm([w.region, w.distillery].join(" ")),
-    price: norm(priceText),
+    price: norm(Object.entries(w.prices).map(([k, v]) => `${v} ${v}€ ${k}`).join(" ")),
     year: w.years.join(" "),
     age: w.age ? `${w.age} ${w.age}yo` : "",
     pct: w.pct ? `${w.pct} ${w.pct}%` : "",
   };
-  text.all = [text.name, text.place, text.price, text.year, text.age, text.pct, norm(w.notes)].join(" ");
-  return { ...w, values, text };
+  text.all = [text.name, text.place, text.price, text.year, text.age, text.pct].join(" ");
+  return { ...w, id: `${w.page}|${w.name}`, values, text };
 }
 
 function parseRange(q) {
@@ -307,26 +444,27 @@ function letterOf(name) {
 }
 
 function card(w) {
-  const prices = Object.entries(w.prices)
-    .map(([k, v]) => `<span class="price"><small>${k.replace("cl", " cl")}</small>${esc(v)} €</span>`).join("");
+  const buttons = Object.entries(w.prices).map(([size, price]) =>
+    `<button type="button" data-id="${esc(w.id)}" data-size="${size}" aria-label="${esc(w.name)}, ${sizeLabel(size)} für ${esc(price)} € hinzufügen">
+      <span><small>${sizeLabel(size)}</small> <b>${esc(price)} €</b></span><span class="plus">+</span>
+    </button>`).join("");
   const tags = [
     w.pct ? `<span class="tag pct">${esc(w.pct)} %</span>` : "",
     w.age ? `<span class="tag">${esc(w.age)} Jahre</span>` : "",
     w.distillery ? `<span class="tag">${esc(w.distillery)}</span>` : "",
     w.region ? `<span class="tag">${esc(w.region)}</span>` : "",
   ].join("");
-  return `<button type="button" class="card">
-    <div class="top"><div class="name">${esc(w.name)}</div><div class="prices">${prices}</div></div>
+  return `<article class="card">
+    <div class="name">${esc(w.name)}</div>
     <div class="meta">${tags}</div>
-    ${w.notes ? `<p class="notes">${esc(w.notes)}</p>` : ""}
-    <div class="page">Karte Seite ${w.page}</div>
-  </button>`;
+    <div class="add">${buttons}</div>
+  </article>`;
 }
 
 function render() {
   const hits = whiskies.filter(matcher(input.value));
-  clearBtn.hidden = !input.value;
-  countEl.textContent = input.value.trim()
+  $("clear").hidden = !input.value;
+  $("count").textContent = input.value.trim()
     ? `${hits.length} von ${whiskies.length} Whiskys`
     : `${whiskies.length} Whiskys`;
   if (!hits.length) {
@@ -346,14 +484,100 @@ function render() {
   listEl.innerHTML = html;
 }
 
+function loadCart() {
+  try {
+    return JSON.parse(sessionStorage.getItem(CART_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCart() {
+  try {
+    sessionStorage.setItem(CART_KEY, JSON.stringify(cart));
+  } catch {}
+}
+
+function cartLines() {
+  return cart
+    .map(line => {
+      const w = byId.get(line.id);
+      return w && w.prices[line.size] ? { ...line, w, price: num(w.prices[line.size]) } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => collator.compare(a.w.name, b.w.name) || collator.compare(a.size, b.size));
+}
+
+function addToCart(id, size) {
+  const line = cart.find(l => l.id === id && l.size === size);
+  if (line) line.qty += 1;
+  else cart.push({ id, size, qty: 1 });
+  saveCart();
+  updateBadge();
+  const btn = $("cart-btn");
+  btn.classList.remove("bump");
+  void btn.offsetWidth;
+  btn.classList.add("bump");
+  const w = byId.get(id);
+  toast(`${w.name} · ${sizeLabel(size)} hinzugefügt (${line ? line.qty : 1}×)`);
+}
+
+function changeQty(id, size, delta) {
+  const line = cart.find(l => l.id === id && l.size === size);
+  if (!line) return;
+  line.qty += delta;
+  if (line.qty <= 0) cart = cart.filter(l => l !== line);
+  saveCart();
+  updateBadge();
+  renderCart();
+}
+
+function updateBadge() {
+  const n = cartLines().reduce((s, l) => s + l.qty, 0);
+  const badge = $("cart-badge");
+  badge.hidden = n === 0;
+  badge.textContent = n;
+  $("cart-btn").setAttribute("aria-label", n ? `Warenkorb öffnen, ${n} Gläser` : "Warenkorb öffnen");
+}
+
+function renderCart() {
+  const lines = cartLines();
+  const count = lines.reduce((s, l) => s + l.qty, 0);
+  const total = lines.reduce((s, l) => s + l.qty * l.price, 0);
+  $("cart-items").innerHTML = lines.length
+    ? lines.map(l => `<div class="line">
+        <div><div class="n">${esc(l.w.name)}</div><div class="sub">${sizeLabel(l.size)} · ${euro.format(l.price)}</div></div>
+        <div class="sum">${euro.format(l.qty * l.price)}</div>
+        <div></div>
+        <div class="qty">
+          <button type="button" data-id="${esc(l.id)}" data-size="${l.size}" data-delta="-1" aria-label="Eins weniger">−</button>
+          <span>${l.qty}</span>
+          <button type="button" data-id="${esc(l.id)}" data-size="${l.size}" data-delta="1" aria-label="Eins mehr">+</button>
+        </div>
+      </div>`).join("")
+    : `<p class="empty">Der Warenkorb ist leer.</p>`;
+  $("cart-count").textContent = count ? `(${count} ${count === 1 ? "Glas" : "Gläser"})` : "";
+  $("cart-total").textContent = euro.format(total);
+  $("cart-empty-btn").hidden = !lines.length;
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
+}
+
 let timer;
 input.addEventListener("input", () => {
   clearTimeout(timer);
   timer = setTimeout(() => { render(); window.scrollTo(0, 0); }, 80);
 });
 input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); });
-clearBtn.addEventListener("click", () => { input.value = ""; render(); input.focus(); });
-document.getElementById("fields").addEventListener("click", e => {
+$("clear").addEventListener("click", () => { input.value = ""; render(); input.focus(); });
+$("fields").addEventListener("click", e => {
   const b = e.target.closest("button");
   if (!b) return;
   field = b.dataset.field;
@@ -363,8 +587,26 @@ document.getElementById("fields").addEventListener("click", e => {
   window.scrollTo(0, 0);
 });
 listEl.addEventListener("click", e => {
-  const c = e.target.closest(".card");
-  if (c) c.classList.toggle("open");
+  const b = e.target.closest("button[data-size]");
+  if (b) addToCart(b.dataset.id, b.dataset.size);
+});
+$("cart-btn").addEventListener("click", () => {
+  renderCart();
+  cartDialog.showModal();
+  document.documentElement.classList.add("locked");
+});
+$("cart-close").addEventListener("click", () => cartDialog.close());
+cartDialog.addEventListener("close", () => document.documentElement.classList.remove("locked"));
+$("cart-items").addEventListener("click", e => {
+  const b = e.target.closest("button[data-delta]");
+  if (b) changeQty(b.dataset.id, b.dataset.size, Number(b.dataset.delta));
+});
+$("cart-empty-btn").addEventListener("click", () => {
+  if (!confirm("Warenkorb wirklich leeren?")) return;
+  cart = [];
+  saveCart();
+  updateBadge();
+  renderCart();
 });
 
 if (window.visualViewport) {
@@ -381,9 +623,11 @@ fetch("data/whiskies.json")
   .then(r => r.json())
   .then(data => {
     whiskies = data.map(prepare).sort((a, b) => collator.compare(a.name, b.name) || a.page - b.page);
+    byId = new Map(whiskies.map(w => [w.id, w]));
     render();
+    updateBadge();
   })
-  .catch(() => { countEl.textContent = "Daten konnten nicht geladen werden."; });
+  .catch(() => { $("count").textContent = "Daten konnten nicht geladen werden."; });
 </script>
 </body>
 </html>

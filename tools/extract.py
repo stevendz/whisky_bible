@@ -133,6 +133,7 @@ def parse(lines):
     close()
 
     for w in items:
+        del w["notes"]
         w["region"] = REGIONS.get(w["region"], w["region"])
         if w["distillery"] == "Whiskylikör":
             w["region"], w["distillery"] = "Whiskylikör", None
